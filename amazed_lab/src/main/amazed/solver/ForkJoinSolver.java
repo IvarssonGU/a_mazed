@@ -57,7 +57,7 @@ public class ForkJoinSolver
      * the maze. If such a path cannot be found (because there are no
      * goals, or all goals are unreacheable), the method returns
      * <code>null</code>.
-     *
+     <>
      * @return   the list of node identifiers from the start node to a
      *           goal node in the maze; <code>null</code> if such a path cannot
      *           be found.
@@ -65,22 +65,10 @@ public class ForkJoinSolver
     @Override
     public List<Integer> compute() {return parallelSearch(start);}
 
-    private List<Integer> parallelSearch(int current) { // int current
+    private List<Integer> parallelSearch(int start) { // int current
 
-        int player = maze.newPlayer(current);
-        frontier.push(current);
-
-        //while (!frontier.isEmpty()) {s
-            // get the new node to process
-
-
-            // if current node has a goal
-        if (maze.hasGoal(current)) {
-            // move player to goal
-            maze.move(player, current);
-            // search finished: reconstruct and return path
-            return pathFromTo(start, current);
-        }
+        int player = maze.newPlayer(start);
+        frontier.push(start);
 
         if (!visited.contains(current)) {
             // move player to current node
@@ -96,18 +84,6 @@ public class ForkJoinSolver
                 }
             }
         }
-
-        // to fork a new thread you just create a new instance of ForkJoinSolver,
-        // with suitable parameters, and call fork() on the instance.
-        if (frontier.size() > 1) {
-            int next = frontier.pop();
-            ForkJoinSolver newSolverBorkShmork = new ForkJoinSolver(maze);
-            //newSolverBorkShmork.parallelSearch(next);
-            newSolverBorkShmork.parallelSearch(next);
-        }
-
-
-        //}
 
         return null;
     }
