@@ -123,6 +123,10 @@ public class ForkJoinSolver extends SequentialSolver {
                 forkedSolvers.add(newSolverBorkShmork);
                 counter = 0; //Reset the counter
             }
+
+            if (counter == 3) {
+                //forka två gånger you know bla bla bla...
+            }
         }
 
         // Forked tasks are created, now fork and join them outside the loop to ensure parallelism
