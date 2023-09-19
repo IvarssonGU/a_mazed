@@ -80,6 +80,7 @@ public class ForkJoinSolver extends SequentialSolver {
         int player = maze.newPlayer(start);
         frontier.push(start);
         int counter = 0;
+        List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
 
         while (!frontier.isEmpty()) {
             int current = frontier.pop(); // get the new node to process
@@ -111,12 +112,19 @@ public class ForkJoinSolver extends SequentialSolver {
                 // Create a new ForkJoinSolver instance with the current maze, player position, and forkAfter value
                 ForkJoinSolver newSolverBorkShmork = new ForkJoinSolver(maze, forkAfter);
                 newSolverBorkShmork.start = next;
-                fjPool.invoke(newSolverBorkShmork);
+                forkedSolvers.add(newSolverBorkShmork);
+                counter = 0; //Reset the counter
             }
+        }
 
-            // to fork a new thread you just create a new instance of ForkJoinSolver,
-            // with suitable parameters, and call fork() on the instance.
+        // Forked tasks are created, now fork and join them outside the loop to ensure parallelism
+        for (ForkJoinSolver solver : forkedSolvers) {
+            fjPool.submit(solver); // Submit the solver to the pool for parallel execution
+        }
 
+        // Join and wait for all forked tasks to complete
+        for (ForkJoinSolver solver : forkedSolvers) {
+            solver.join();
         }
 
         return null;
