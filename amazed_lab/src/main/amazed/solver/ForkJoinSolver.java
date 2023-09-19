@@ -24,7 +24,6 @@ import java.util.concurrent.ForkJoinPool;
 public class ForkJoinSolver extends SequentialSolver {
 
     private ForkJoinPool fjPool;
-
     private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
     ConcurrentLinkedDeque<Integer> frontier = new ConcurrentLinkedDeque<>(); // Create a thread-safe stack
 
@@ -80,6 +79,7 @@ public class ForkJoinSolver extends SequentialSolver {
 
         int player = maze.newPlayer(start);
         frontier.push(start);
+        int counter = 0;
 
         while (!frontier.isEmpty()) {
             int current = frontier.pop(); // get the new node to process
@@ -94,24 +94,29 @@ public class ForkJoinSolver extends SequentialSolver {
                 visited.add(current); // mark node as visited
 
                 for (int nb: maze.neighbors(current)) {
+                    counter++;
                     frontier.push(nb); // add nb to the nodes to be processed
+
 
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb))
                         predecessor.put(nb, current);
                 }
+
             }
 
-            // to fork a new thread you just create a new instance of ForkJoinSolver,
-            // with suitable parameters, and call fork() on the instance.
-            if (frontier.size() > 1) {
-                int next = frontier.peek();
+            if (counter == 2) {
+                int next = frontier.pop();
                 // Create a new ForkJoinSolver instance with the current maze, player position, and forkAfter value
                 ForkJoinSolver newSolverBorkShmork = new ForkJoinSolver(maze, forkAfter);
                 newSolverBorkShmork.start = next;
                 fjPool.invoke(newSolverBorkShmork);
             }
+
+            // to fork a new thread you just create a new instance of ForkJoinSolver,
+            // with suitable parameters, and call fork() on the instance.
+
         }
 
         return null;
