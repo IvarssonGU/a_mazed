@@ -23,7 +23,7 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ForkJoinSolver extends SequentialSolver {
 
-    ForkJoinPool fjPool = new ForkJoinPool(); //(kanske här)
+    private ForkJoinPool fjPool;
 
     private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
     ConcurrentLinkedDeque<Integer> frontier = new ConcurrentLinkedDeque<>(); // Create a thread-safe stack
@@ -42,6 +42,7 @@ public class ForkJoinSolver extends SequentialSolver {
     public ForkJoinSolver(Maze maze)
     {
         super(maze);
+        fjPool = new ForkJoinPool();
     }
 
     /**
@@ -89,7 +90,6 @@ public class ForkJoinSolver extends SequentialSolver {
             }
 
             if (!visited.contains(current)) { // if current node has not been visited yet
-
                 maze.move(player, current); // move player to current node
                 visited.add(current); // mark node as visited
 
@@ -106,12 +106,11 @@ public class ForkJoinSolver extends SequentialSolver {
             // to fork a new thread you just create a new instance of ForkJoinSolver,
             // with suitable parameters, and call fork() on the instance.
             if (frontier.size() > 1) {
-                int next = frontier.pop();
+                int next = frontier.peek();
                 // Create a new ForkJoinSolver instance with the current maze, player position, and forkAfter value
                 ForkJoinSolver newSolverBorkShmork = new ForkJoinSolver(maze, forkAfter);
-                maze.move(player, next);
-                newSolverBorkShmork.fork();
-                newSolverBorkShmork.join();
+                newSolverBorkShmork.start = next;
+                fjPool.invoke(newSolverBorkShmork);
             }
         }
 
