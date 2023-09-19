@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * <code>ForkJoinSolver</code> implements a solver for
@@ -26,6 +28,8 @@ public class ForkJoinSolver extends SequentialSolver {
     private ForkJoinPool fjPool;
     private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
     ConcurrentLinkedDeque<Integer> frontier = new ConcurrentLinkedDeque<>(); // Create a thread-safe stack
+    private final Lock visitedLock = new ReentrantLock();
+
 
 
 
@@ -89,23 +93,27 @@ public class ForkJoinSolver extends SequentialSolver {
                 maze.move(player, current); //Move the player to the goal
                 return pathFromTo(start, current); // search finished: reconstruct and return path
             }
+            visitedLock.lock();
+            try {
+                if (!visited.contains(current)) { // if current node has not been visited yet
+                    visited.add(current); // mark node as visited
+                    maze.move(player, current); // move player to current node
 
-            if (!visited.contains(current)) { // if current node has not been visited yet
-                maze.move(player, current); // move player to current node
-                visited.add(current); // mark node as visited
-
-                for (int nb: maze.neighbors(current)) {
-                    counter++;
-                    frontier.push(nb); // add nb to the nodes to be processed
+                    for (int nb: maze.neighbors(current)) {
+                        counter++;
+                        frontier.push(nb); // add nb to the nodes to be processed
 
 
-                    // if nb has not been already visited,
-                    // nb can be reached from current (i.e., current is nb's predecessor)
-                    if (!visited.contains(nb))
-                        predecessor.put(nb, current);
+                        // if nb has not been already visited,
+                        // nb can be reached from current (i.e., current is nb's predecessor)
+                        if (!visited.contains(nb))
+                            predecessor.put(nb, current);
+                    }
                 }
-
+            } finally {
+                visitedLock.unlock();
             }
+
 
             if (counter == 2) {
                 int next = frontier.pop();
