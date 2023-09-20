@@ -25,14 +25,15 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ForkJoinSolver extends SequentialSolver {
 
-    private ForkJoinPool fjPool;
-    private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
-    ConcurrentLinkedDeque<Integer> frontier = new ConcurrentLinkedDeque<>(); // Create a thread-safe stack
-    private final Lock visitedLock = new ReentrantLock();
+    private static ForkJoinPool fjPool = new ForkJoinPool();;
+    //private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
+    private static ConcurrentLinkedDeque<Integer> frontier = new ConcurrentLinkedDeque<>(); // Create a thread-safe stack
+    //private final Lock visitedLock = new ReentrantLock();
+    private static Set<Integer> visited = new ConcurrentSkipListSet<>();
 
+    private Map<Integer, Integer> predecessor;
 
-
-
+    private int current;
 
     /**
      * Creates a solver that searches in <code>maze</code> from the
@@ -42,7 +43,7 @@ public class ForkJoinSolver extends SequentialSolver {
      */
 
     // Skapa en ForkJoinPool-instans, fixa workers osv kanske något arbete mm mm dsvdv.
-    public ForkJoinSolver(Maze maze)
+    public ForkJoinSolver(Maze maze, int forkAfter, Map<Integer, Integer> predecessor, Set<Integer> visited, int current)
     {
         super(maze);
         this.forkAfter = forkAfter;
@@ -63,8 +64,9 @@ public class ForkJoinSolver extends SequentialSolver {
      */
     public ForkJoinSolver(Maze maze, int forkAfter  )
     {
-        this(maze);
+        super(maze);
         this.forkAfter = forkAfter;
+        this.predecessor = new HashMap<>();
     }
 
     /**
@@ -85,9 +87,7 @@ public class ForkJoinSolver extends SequentialSolver {
         int player = maze.newPlayer(current);
         frontier.push(current);
         List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
-
-        while (!frontier.isEmpty()) {
-            int current = frontier.pop(); // get the new node to process
+        int nextPos = frontier.pop(); // get the new node to process
 
         if (maze.hasGoal(nextPos)) {
             maze.move(player, nextPos); //Move the player to the goal

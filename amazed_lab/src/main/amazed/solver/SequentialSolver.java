@@ -2,6 +2,7 @@ package amazed.solver;
 
 import amazed.maze.Maze;
 
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RecursiveTask;
 
 import java.util.List;
@@ -99,6 +100,9 @@ public class SequentialSolver
      * starts.
      */
     protected int start;
+
+    // temporary test shizz
+    protected final Lock visitedLock = new ReentrantLock();
 
     /**
      * Searches for and returns the path, as a list of node
