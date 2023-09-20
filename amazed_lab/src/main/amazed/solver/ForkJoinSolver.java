@@ -45,7 +45,9 @@ public class ForkJoinSolver extends SequentialSolver {
     public ForkJoinSolver(Maze maze)
     {
         super(maze);
-        fjPool = new ForkJoinPool();
+        this.forkAfter = forkAfter;
+        this.predecessor = predecessor;
+        this.current = current;
     }
 
     /**
@@ -59,7 +61,7 @@ public class ForkJoinSolver extends SequentialSolver {
      *                    <code>forkAfter &lt;= 0</code> the solver never
      *                    forks new tasks
      */
-    public ForkJoinSolver(Maze maze, int forkAfter)
+    public ForkJoinSolver(Maze maze, int forkAfter  )
     {
         this(maze);
         this.forkAfter = forkAfter;
@@ -79,54 +81,55 @@ public class ForkJoinSolver extends SequentialSolver {
     @Override
     public List<Integer> compute() {return parallelSearch(start);}
 
-    private List<Integer> parallelSearch(int start) {
-
-        int player = maze.newPlayer(start);
-        frontier.push(start);
-        int counter = 0;
+    private List<Integer> parallelSearch(int current) {
+        int player = maze.newPlayer(current);
+        frontier.push(current);
         List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
 
         while (!frontier.isEmpty()) {
             int current = frontier.pop(); // get the new node to process
 
-            if (maze.hasGoal(current)) {
-                maze.move(player, current); //Move the player to the goal
-                return pathFromTo(start, current); // search finished: reconstruct and return path
-            }
-            visitedLock.lock();
-            try {
-                if (!visited.contains(current)) { // if current node has not been visited yet
-                    visited.add(current); // mark node as visited
-                    maze.move(player, current); // move player to current node
+        if (maze.hasGoal(nextPos)) {
+            maze.move(player, nextPos); //Move the player to the goal
+            return pathFromTo(start, nextPos); // search finished: reconstruct and return path
+        }
 
-                    for (int nb: maze.neighbors(current)) {
-                        counter++;
-                        frontier.push(nb); // add nb to the nodes to be processed
+        if (!visited.contains(nextPos)) { // if current node has not been visited yet
+            visited.add(nextPos); // mark node as visited
+            maze.move(player, nextPos); // move player to current node
 
+            for (int nb : maze.neighbors(nextPos)) {
+                frontier.push(nb); // add nb to the nodes to be processed
 
-                        // if nb has not been already visited,
-                        // nb can be reached from current (i.e., current is nb's predecessor)
-                        if (!visited.contains(nb))
-                            predecessor.put(nb, current);
-                    }
+                // if nb has not been already visited,
+                // nb can be reached from current (i.e., current is nb's predecessor)
+                if (!visited.contains(nb)) {
+                    predecessor.put(nextPos, nb);
                 }
-            } finally {
-                visitedLock.unlock();
             }
+        }
 
-
-            if (counter == 2) {
-                int next = frontier.pop();
-                // Create a new ForkJoinSolver instance with the current maze, player position, and forkAfter value
-                ForkJoinSolver newSolverBorkShmork = new ForkJoinSolver(maze, forkAfter);
-                newSolverBorkShmork.start = next;
-                forkedSolvers.add(newSolverBorkShmork);
-                counter = 0; //Reset the counter
-            }
-
-            if (counter == 3) {
-                //forka två gånger you know bla bla bla...
-            }
+        if (frontier.size() == 1) {
+            Integer next = frontier.pop();
+            maze.move(player, next);
+            return parallelSearch(next);
+        } else if (frontier.size() == 2) {
+            Integer next = frontier.pop();
+            maze.move(player, next);
+            forkedSolvers.add(new ForkJoinSolver(maze, forkAfter, predecessor, visited, frontier.pop()));
+            return parallelSearch(next);
+            //(frontier.size() > 1) {
+            //for (int nb : frontier) {
+            //    forkedSolvers.add(new ForkJoinSolver(maze, forkAfter, predecessor, visited, nb));
+            //}
+        } else if (frontier.size() == 3) {
+            Integer next = frontier.pop();
+            maze.move(player, next);
+            forkedSolvers.add(new ForkJoinSolver(maze, forkAfter, predecessor, visited, frontier.pop()));
+            forkedSolvers.add(new ForkJoinSolver(maze, forkAfter, predecessor, visited, frontier.pop()));
+            return parallelSearch(next);
+        } else {
+            return null;
         }
 
         // Forked tasks are created, now fork and join them outside the loop to ensure parallelism
@@ -138,7 +141,5 @@ public class ForkJoinSolver extends SequentialSolver {
         for (ForkJoinSolver solver : forkedSolvers) {
             solver.join();
         }
-
-        return null;
     }
 }

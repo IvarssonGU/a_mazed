@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Stack;
 import java.util.Collections;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * <code>SequentialSolver</code> implements a solver for
