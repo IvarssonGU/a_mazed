@@ -19,11 +19,10 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ForkJoinSolver extends SequentialSolver {
 
-    private final ForkJoinPool fjPool = new ForkJoinPool();
     private final List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
     private static final Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
     private final Stack<Integer> frontier = new Stack<>();
-    private Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
+    private static final Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
 
     private static volatile boolean goalFound = false;
     private static volatile List<Integer> result = null;
@@ -34,11 +33,11 @@ public class ForkJoinSolver extends SequentialSolver {
      *
      * @param maze   the maze to be searched
      */
-    public ForkJoinSolver(Maze maze, Map<Integer, Integer> predecessor, int next)
+    public ForkJoinSolver(Maze maze, Integer next)
     {
         this(maze);
-        //this.visited = visited;
-        this.predecessor = predecessor;
+        //this.predecessor = predecessor;
+        startValues.add(next);
         start = next;
     }
 
@@ -77,7 +76,7 @@ public class ForkJoinSolver extends SequentialSolver {
     @Override
     public List<Integer> compute() {return parallelSearch(start);}
 
-    private List<Integer> parallelSearch(int start) {
+    private List<Integer> parallelSearch(Integer start) {
 
         int player = maze.newPlayer(start);
         frontier.push(start);
@@ -89,7 +88,14 @@ public class ForkJoinSolver extends SequentialSolver {
                 maze.move(player, current); //Move the player to the goal
                 visited.add(current);
                 goalFound = true;
+                for (ForkJoinSolver task : forkedSolvers) {
+                    task.join();
+                }
                 result = pathFromTo(start, current);
+                System.out.println(predecessor);
+                System.out.println(startValues);
+                System.out.println(start);
+                System.out.println(current);
                 return result;// search finished: reconstruct and return path
             }
 
@@ -100,8 +106,8 @@ public class ForkJoinSolver extends SequentialSolver {
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb)) {
-                        predecessor.put(nb, current);
                         frontier.push(nb); // add nb to the nodes to be processed
+                        predecessor.put(nb, current);
                     }
                 }
                 switch (frontier.size()) {
@@ -134,9 +140,9 @@ public class ForkJoinSolver extends SequentialSolver {
      */
     private void popAndAdd() {
         if (!frontier.isEmpty()) {
-            int next = frontier.pop();
+            Integer next = frontier.pop();
             if (!visited.contains(next)) {
-                ForkJoinSolver task = new ForkJoinSolver(maze, predecessor, next);
+                ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
                 task.fork(); // Create chaos, uncomment when we have desired behavior
             }
