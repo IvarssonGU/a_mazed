@@ -21,10 +21,12 @@ public class ForkJoinSolver extends SequentialSolver {
 
     private final ForkJoinPool fjPool = new ForkJoinPool();
     private final List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
-    private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
+    private static final Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
     private final Stack<Integer> frontier = new Stack<>();
     private Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
 
+    private static volatile boolean goalFound = false;
+    private static volatile List<Integer> result = null;
 
     /**
      * Creates a solver that searches in <code>maze</code> from the
@@ -32,10 +34,10 @@ public class ForkJoinSolver extends SequentialSolver {
      *
      * @param maze   the maze to be searched
      */
-    public ForkJoinSolver(Maze maze, Set<Integer> visited, Map<Integer, Integer> predecessor, int next)
+    public ForkJoinSolver(Maze maze, Map<Integer, Integer> predecessor, int next)
     {
         this(maze);
-        this.visited = visited;
+        //this.visited = visited;
         this.predecessor = predecessor;
         start = next;
     }
@@ -80,7 +82,7 @@ public class ForkJoinSolver extends SequentialSolver {
         int player = maze.newPlayer(start);
         frontier.push(start);
 
-        while (!frontier.isEmpty()) {
+        while (!frontier.isEmpty() && !goalFound) {
             int current = frontier.pop(); // get the new node to process
 
             if (maze.hasGoal(current)) {
@@ -91,13 +93,10 @@ public class ForkJoinSolver extends SequentialSolver {
                 return result;// search finished: reconstruct and return path
             }
 
-            if (!visited.contains(current)) { // if current node has not been visited yet
+            if (visited.add(current)) { // if current node has not been visited yet
                 maze.move(player, current); // move player to current node
-                visited.add(current); // mark node as visited
 
                 for (int nb: maze.neighbors(current)) {
-                    frontier.push(nb); // add nb to the nodes to be processed
-
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb)) {
@@ -126,7 +125,7 @@ public class ForkJoinSolver extends SequentialSolver {
 
         } //while loop end
 
-        return null; //if no goal was ever found, return null
+        return result; //if no goal was ever found, return null
     }
 
     /**
