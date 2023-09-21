@@ -22,7 +22,7 @@ public class ForkJoinSolver extends SequentialSolver {
     private final ForkJoinPool fjPool = new ForkJoinPool();
     private final List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
     private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
-    private Stack<Integer> frontier = new Stack<>();
+    private final Stack<Integer> frontier = new Stack<>();
     private Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
 
 
@@ -34,7 +34,7 @@ public class ForkJoinSolver extends SequentialSolver {
      */
     public ForkJoinSolver(Maze maze, Set<Integer> visited, Map<Integer, Integer> predecessor, int next)
     {
-        super(maze);
+        this(maze);
         this.visited = visited;
         this.predecessor = predecessor;
         start = next;
@@ -107,10 +107,8 @@ public class ForkJoinSolver extends SequentialSolver {
                         break;       // exit the switch case
                     case 2:
                         popAndAdd(); //fork new solver for the first neighbour
-                        popAndAdd(); //fork another for the second neighbour
                     case 3:
                         popAndAdd(); //same logic as above
-                        popAndAdd();
                         popAndAdd();
                 }
 
@@ -137,6 +135,7 @@ public class ForkJoinSolver extends SequentialSolver {
             int next = frontier.pop();
             ForkJoinSolver task = new ForkJoinSolver(maze, visited, predecessor, next);
             forkedSolvers.add(task);
+            //task.fork(); // Create chaos, uncomment when we have desired behavior
         }
     }
 }
