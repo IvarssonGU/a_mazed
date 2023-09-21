@@ -2,12 +2,8 @@ package amazed.solver;
 
 import amazed.maze.Maze;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ForkJoinPool;
 
@@ -23,11 +19,11 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ForkJoinSolver extends SequentialSolver {
 
-    private ForkJoinPool fjPool;
+    private final ForkJoinPool fjPool = new ForkJoinPool();
+    private final List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
     private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
-    ConcurrentLinkedDeque<Integer> frontier = new ConcurrentLinkedDeque<>(); // Create a thread-safe stack
-
-
+    private final Stack<Integer> frontier = new Stack<>();
+    private Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
 
 
     /**
@@ -36,12 +32,12 @@ public class ForkJoinSolver extends SequentialSolver {
      *
      * @param maze   the maze to be searched
      */
-
-    // Skapa en ForkJoinPool-instans, fixa workers osv kanske något arbete mm mm dsvdv.
-    public ForkJoinSolver(Maze maze)
+    public ForkJoinSolver(Maze maze, Set<Integer> visited, Map<Integer, Integer> predecessor, int next)
     {
         super(maze);
-        fjPool = new ForkJoinPool();
+        this.visited = visited;
+        this.predecessor = predecessor;
+        start = next;
     }
 
     /**
@@ -59,6 +55,10 @@ public class ForkJoinSolver extends SequentialSolver {
     {
         this(maze);
         this.forkAfter = forkAfter;
+    }
+
+    public ForkJoinSolver(Maze maze) {
+        super(maze);
     }
 
     /**
@@ -79,7 +79,6 @@ public class ForkJoinSolver extends SequentialSolver {
 
         int player = maze.newPlayer(start);
         frontier.push(start);
-        int counter = 0;
 
         while (!frontier.isEmpty()) {
             int current = frontier.pop(); // get the new node to process
@@ -94,9 +93,10 @@ public class ForkJoinSolver extends SequentialSolver {
                 visited.add(current); // mark node as visited
 
                 for (int nb: maze.neighbors(current)) {
-                    counter++;
                     frontier.push(nb); // add nb to the nodes to be processed
-
+                    int next = frontier.pop();
+                    ForkJoinSolver task = new ForkJoinSolver(maze, visited, predecessor, next);
+                    forkedSolvers.add(task);
 
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
@@ -106,19 +106,15 @@ public class ForkJoinSolver extends SequentialSolver {
 
             }
 
-            if (counter == 2) {
-                int next = frontier.pop();
-                // Create a new ForkJoinSolver instance with the current maze, player position, and forkAfter value
-                ForkJoinSolver newSolverBorkShmork = new ForkJoinSolver(maze, forkAfter);
-                newSolverBorkShmork.start = next;
-                fjPool.invoke(newSolverBorkShmork);
-            }
-
             // to fork a new thread you just create a new instance of ForkJoinSolver,
             // with suitable parameters, and call fork() on the instance.
 
+        } //while loop end
+
+        for (ForkJoinSolver task : forkedSolvers) {
+            fjPool.invoke(task);
         }
 
-        return null;
+        return null; //if no goal was ever found, return null
     }
 }
