@@ -22,11 +22,9 @@ public class ForkJoinSolver extends SequentialSolver {
     private final List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
     private static final Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
     private final Stack<Integer> frontier = new Stack<>();
-    private static final Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
-
+    //private static final Map<Integer, Integer> predecessor; //Create a thread-safe Map
     private static volatile boolean goalFound = false;
     private static volatile List<Integer> result = null;
-    private static final ArrayList<Integer> startValues = new ArrayList<>();
 
     /**
      * Creates a solver that searches in <code>maze</code> from the
@@ -37,8 +35,7 @@ public class ForkJoinSolver extends SequentialSolver {
     public ForkJoinSolver(Maze maze, Integer next)
     {
         this(maze);
-        //this.predecessor = predecessor;
-        startValues.add(next);
+        //this.predecessor = new ConcurrentSkipListMap<>();
         start = next;
     }
 
@@ -61,6 +58,7 @@ public class ForkJoinSolver extends SequentialSolver {
 
     public ForkJoinSolver(Maze maze) {
         super(maze);
+
     }
 
     /**
@@ -77,8 +75,7 @@ public class ForkJoinSolver extends SequentialSolver {
     @Override
     public List<Integer> compute() {return parallelSearch(start);}
 
-    private List<Integer> parallelSearch(Integer start) {
-
+    private List<Integer> parallelSearch(int start) {
         int player = maze.newPlayer(start);
         frontier.push(start);
 
@@ -89,21 +86,14 @@ public class ForkJoinSolver extends SequentialSolver {
                 maze.move(player, current); //Move the player to the goal
                 visited.add(current);
                 goalFound = true;
-                for (ForkJoinSolver task : forkedSolvers) {
-                    task.join();
-                }
                 result = pathFromTo(start, current);
-                System.out.println(predecessor);
-                System.out.println(startValues);
-                System.out.println(start);
-                System.out.println(current);
-                return result;// search finished: reconstruct and return path
+                return result; // search finished: reconstruct and return path
             }
 
             if (visited.add(current)) { // if current node has not been visited yet
                 maze.move(player, current); // move player to current node
 
-                for (int nb: maze.neighbors(current)) {
+                for (Integer nb: maze.neighbors(current)) {
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb)) {
@@ -123,14 +113,17 @@ public class ForkJoinSolver extends SequentialSolver {
 
             }
 
-            for (ForkJoinSolver task : forkedSolvers) {
-                task.join();
-            }
+
 
             // to fork a new thread you just create a new instance of ForkJoinSolver,
             // with suitable parameters, and call fork() on the instance.
 
         } //while loop end
+        for (ForkJoinSolver task : forkedSolvers) {
+            if (task.join() != null) {
+                result.addAll(pathFromTo(start, current));
+            }
+        }
 
         return result; //if no goal was ever found, return null
     }
