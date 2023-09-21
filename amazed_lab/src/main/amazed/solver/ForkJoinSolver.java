@@ -85,7 +85,10 @@ public class ForkJoinSolver extends SequentialSolver {
 
             if (maze.hasGoal(current)) {
                 maze.move(player, current); //Move the player to the goal
-                return pathFromTo(start, current); // search finished: reconstruct and return path
+                visited.add(current);
+                goalFound = true;
+                result = pathFromTo(start, current);
+                return result;// search finished: reconstruct and return path
             }
 
             if (!visited.contains(current)) { // if current node has not been visited yet
@@ -97,12 +100,12 @@ public class ForkJoinSolver extends SequentialSolver {
 
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
-                    if (!visited.contains(nb))
+                    if (!visited.contains(nb)) {
                         predecessor.put(nb, current);
+                        frontier.push(nb); // add nb to the nodes to be processed
+                    }
                 }
                 switch (frontier.size()) {
-                    case 0:
-                        return null; //kan vara fel? låter vara kvar så länge
                     case 1:
                         break;       // exit the switch case
                     case 2:
@@ -114,14 +117,14 @@ public class ForkJoinSolver extends SequentialSolver {
 
             }
 
+            for (ForkJoinSolver task : forkedSolvers) {
+                task.join();
+            }
+
             // to fork a new thread you just create a new instance of ForkJoinSolver,
             // with suitable parameters, and call fork() on the instance.
 
         } //while loop end
-
-        for (ForkJoinSolver task : forkedSolvers) {
-            fjPool.invoke(task);
-        }
 
         return null; //if no goal was ever found, return null
     }
@@ -133,9 +136,11 @@ public class ForkJoinSolver extends SequentialSolver {
     private void popAndAdd() {
         if (!frontier.isEmpty()) {
             int next = frontier.pop();
-            ForkJoinSolver task = new ForkJoinSolver(maze, visited, predecessor, next);
-            forkedSolvers.add(task);
-            //task.fork(); // Create chaos, uncomment when we have desired behavior
+            if (!visited.contains(next)) {
+                ForkJoinSolver task = new ForkJoinSolver(maze, predecessor, next);
+                forkedSolvers.add(task);
+                task.fork(); // Create chaos, uncomment when we have desired behavior
+            }
         }
     }
 }
