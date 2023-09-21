@@ -26,6 +26,7 @@ public class ForkJoinSolver extends SequentialSolver {
 
     private static volatile boolean goalFound = false;
     private static volatile List<Integer> result = null;
+    private static final ArrayList<Integer> startValues = new ArrayList<>();
 
     /**
      * Creates a solver that searches in <code>maze</code> from the

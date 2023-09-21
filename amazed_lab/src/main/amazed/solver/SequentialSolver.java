@@ -175,7 +175,7 @@ public class SequentialSolver
             if (current == null)
                 return null;
         }
-        path.add(from);
+        path.add(from); // 42, 69, -38
         Collections.reverse(path);
         return path;
     }
