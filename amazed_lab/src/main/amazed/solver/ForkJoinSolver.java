@@ -22,7 +22,7 @@ public class ForkJoinSolver extends SequentialSolver {
     private final ForkJoinPool fjPool = new ForkJoinPool();
     private final List<ForkJoinSolver> forkedSolvers = new ArrayList<>(); // Keep track of forked tasks
     private Set<Integer> visited = new ConcurrentSkipListSet<>(); // Create a thread-safe set
-    private final Stack<Integer> frontier = new Stack<>();
+    private Stack<Integer> frontier = new Stack<>();
     private Map<Integer, Integer> predecessor = new ConcurrentSkipListMap<>(); //Create a thread-safe Map
 
 
@@ -94,14 +94,24 @@ public class ForkJoinSolver extends SequentialSolver {
 
                 for (int nb: maze.neighbors(current)) {
                     frontier.push(nb); // add nb to the nodes to be processed
-                    int next = frontier.pop();
-                    ForkJoinSolver task = new ForkJoinSolver(maze, visited, predecessor, next);
-                    forkedSolvers.add(task);
 
                     // if nb has not been already visited,
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb))
                         predecessor.put(nb, current);
+                }
+                switch (frontier.size()) {
+                    case 0:
+                        return null; //kan vara fel? låter vara kvar så länge
+                    case 1:
+                        break;       // exit the switch case
+                    case 2:
+                        popAndAdd(); //fork new solver for the first neighbour
+                        popAndAdd(); //fork another for the second neighbour
+                    case 3:
+                        popAndAdd(); //same logic as above
+                        popAndAdd();
+                        popAndAdd();
                 }
 
             }
@@ -116,5 +126,17 @@ public class ForkJoinSolver extends SequentialSolver {
         }
 
         return null; //if no goal was ever found, return null
+    }
+
+    /**
+     * Pops a int from the frontier stack, creates a new ForkJoinSolver with all the necessary
+     * parameters and adds this ForkJoinSolver to the list with tasks to be processed
+     */
+    private void popAndAdd() {
+        if (!frontier.isEmpty()) {
+            int next = frontier.pop();
+            ForkJoinSolver task = new ForkJoinSolver(maze, visited, predecessor, next);
+            forkedSolvers.add(task);
+        }
     }
 }
