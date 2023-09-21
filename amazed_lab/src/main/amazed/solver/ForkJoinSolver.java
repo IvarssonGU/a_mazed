@@ -78,9 +78,10 @@ public class ForkJoinSolver extends SequentialSolver {
     private List<Integer> parallelSearch(int start) {
         int player = maze.newPlayer(start);
         frontier.push(start);
+        int current = start;
 
         while (!frontier.isEmpty() && !goalFound) {
-            int current = frontier.pop(); // get the new node to process
+            current = frontier.pop(); // get the new node to process
 
             if (maze.hasGoal(current)) {
                 maze.move(player, current); //Move the player to the goal
@@ -138,6 +139,7 @@ public class ForkJoinSolver extends SequentialSolver {
             if (!visited.contains(next)) {
                 ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
+                // alternativt testa att köra join på denna instans och vänta på dess barn.
                 task.fork(); // Create chaos, uncomment when we have desired behavior
             }
         }
