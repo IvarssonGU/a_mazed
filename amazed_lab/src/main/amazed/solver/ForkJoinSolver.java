@@ -76,7 +76,8 @@ public class ForkJoinSolver extends SequentialSolver {
         frontier.push(start);
         int current = start;
 
-        while (!frontier.isEmpty() && !goalFound.get()) {
+        do {
+            if (goalFound.get()) return null;
             current = frontier.pop(); // get the new node to process
 
             if (maze.hasGoal(current)) {
@@ -85,6 +86,8 @@ public class ForkJoinSolver extends SequentialSolver {
                 result.addAll(pathFromTo(start, current));
                 System.out.println(predecessor);
                 System.out.println("goal child " + result);
+                System.out.println("real start: " + maze.start());
+                System.out.println("real end " + current);
                 return result; // search finished: reconstruct and return path
             }
 
@@ -96,16 +99,16 @@ public class ForkJoinSolver extends SequentialSolver {
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb)) {
                         frontier.push(nb); // add nb to the nodes to be processed
-                        predecessor.put(nb, current);
+                        predecessor .put(nb, current);
                     }
                 }
                 switch (frontier.size()) {
                     case 1:
                         break;       // exit the switch case
                     case 2:
-                        popAndAdd(); //fork new solver for the first neighbour
+                        popAndAdd(); // fork new solver for the first neighbour
                     case 3:
-                        popAndAdd(); //same logic as above
+                        popAndAdd(); // same logic as above
                         popAndAdd();
                 }
             }
@@ -117,7 +120,8 @@ public class ForkJoinSolver extends SequentialSolver {
             }
         }
 
-        if (!result.isEmpty()) {
+        if (result != null && !result.isEmpty()) {
+            result.addAll(pathFromTo(start, current));
             return result;
         } else {
             return null; //if no goal was ever found, return null
