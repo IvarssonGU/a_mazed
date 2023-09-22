@@ -122,12 +122,13 @@ public class ForkJoinSolver extends SequentialSolver {
 
             }
 
-
+            // testa att tvinga alla att stänga av vid goalFound
 
             // to fork a new thread you just create a new instance of ForkJoinSolver,
             // with suitable parameters, and call fork() on the instance.
 
         } //while loop end
+
         for (ForkJoinSolver task : forkedSolvers) {
             if (task.join() != null) {
                 System.out.println(result);
@@ -136,11 +137,15 @@ public class ForkJoinSolver extends SequentialSolver {
             }
         }
 
-        return result; //if no goal was ever found, return null
+        if (!result.isEmpty()) {
+            return result;
+        } else {
+            return null; //if no goal was ever found, return null
+        }
     }
 
     /**
-     * Pops a int from the frontier stack, creates a new ForkJoinSolver with all the necessary
+     * Pops an int from the frontier stack, creates a new ForkJoinSolver with all the necessary
      * parameters and adds this ForkJoinSolver to the list with tasks to be processed
      */
     synchronized private void popAndAdd() {
