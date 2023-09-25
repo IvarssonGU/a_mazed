@@ -72,9 +72,7 @@ public class ForkJoinSolver extends SequentialSolver {
      */
     @Override
     public List<Integer> compute() {
-        List<Integer> pung = parallelSearch(start);
-        System.out.println(pung);
-        return pung;
+        return parallelSearch(start);
     }
 
     private List<Integer> parallelSearch(int start) {
@@ -118,15 +116,13 @@ public class ForkJoinSolver extends SequentialSolver {
 
         for (ForkJoinSolver task : forkedSolvers) {
             if (task.join() != null) {
-                result.addAll(task.result); //Add child result
                 result.addAll(pathFromTo(start, current)); //Add own result
-                task.predecessor.forEach((key, value) -> predecessor.merge(key, value, (v1, v2) -> v1 + v2));
+                result.addAll(task.result); //Add child result
+                //task.predecessor.forEach((key, value) -> predecessor.merge(key, value, (v1, v2) -> v1 + v2));
             }
         }
 
         if (!result.isEmpty()) {
-            System.out.println(predecessor + "predecessor");
-            System.out.println(result + "result");
             return result;
         } else {
             return null;
