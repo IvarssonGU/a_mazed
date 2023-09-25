@@ -71,7 +71,11 @@ public class ForkJoinSolver extends SequentialSolver {
      *           be found.
      */
     @Override
-    public List<Integer> compute() {return parallelSearch(start);}
+    public List<Integer> compute() {
+        List<Integer> pung = parallelSearch(start);
+        System.out.println(pung);
+        return pung;
+    }
 
     private List<Integer> parallelSearch(int start) {
         int player = maze.newPlayer(start);
