@@ -23,6 +23,8 @@ public class ForkJoinSolver extends SequentialSolver {
     private final Stack<Integer> frontier = new Stack<>();
     private static final AtomicBoolean goalFound = new AtomicBoolean();
     private CopyOnWriteArrayList<Integer> result = new CopyOnWriteArrayList<>();
+    //private static Map<Integer, Integer> predecessor = new ConcurrentHashMap<>();
+
 
     /**
      * Creates a solver that searches in <code>maze</code> from the
@@ -108,7 +110,7 @@ public class ForkJoinSolver extends SequentialSolver {
                     popAndAdd(current);
                 }
             }
-        } while (!frontier.isEmpty() && !goalFound.get()); //while loop end
+        } while (!frontier.isEmpty() && !goalFound.get());
 
         for (ForkJoinSolver task : forkedSolvers) {
             if (task.join() != null) {
@@ -120,7 +122,6 @@ public class ForkJoinSolver extends SequentialSolver {
 
         if (!result.isEmpty()) {
             System.out.println(predecessor + "predecessor");
-            System.out.println(pathFromTo(start, current) + "pathfromto");
             System.out.println(result + "result");
             return result;
         } else {
@@ -138,7 +139,8 @@ public class ForkJoinSolver extends SequentialSolver {
             if (!visited.contains(next)) {
                 ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
-                task.predecessor.put(next, current);
+                System.out.println("forked a kid, parent in: " + current + " and child in: " + next);
+                predecessor.put(next, current);
                 task.fork();
             }
         }
