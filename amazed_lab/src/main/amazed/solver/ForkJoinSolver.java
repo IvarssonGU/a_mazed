@@ -139,7 +139,7 @@ public class ForkJoinSolver extends SequentialSolver {
             if (!visited.contains(next)) {
                 ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
-                System.out.println("forked a kid, parent in: " + current + " and child in: " + next);
+                //System.out.println("Forked a kid, parent in: " + current + " and child in: " + next);
                 predecessor.put(next, current);
                 task.fork();
             }
