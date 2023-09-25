@@ -74,7 +74,7 @@ public class ForkJoinSolver extends SequentialSolver {
     private List<Integer> parallelSearch(int start) {
         int player = maze.newPlayer(start);
         frontier.push(start);
-        int current = start;
+        int current;
 
         do {
             if (goalFound.get()) return null;
@@ -84,10 +84,6 @@ public class ForkJoinSolver extends SequentialSolver {
                 maze.move(player, current); //Move the player to the goal
                 goalFound.set(true);
                 result.addAll(pathFromTo(start, current));
-                System.out.println(predecessor);
-                System.out.println("goal child " + result);
-                System.out.println("real start: " + maze.start());
-                System.out.println("real end " + current);
                 return result; // search finished: reconstruct and return path
             }
 
@@ -99,32 +95,36 @@ public class ForkJoinSolver extends SequentialSolver {
                     // nb can be reached from current (i.e., current is nb's predecessor)
                     if (!visited.contains(nb)) {
                         frontier.push(nb); // add nb to the nodes to be processed
-                        predecessor .put(nb, current);
+                        predecessor.put(nb, current);
                     }
                 }
-                switch (frontier.size()) {
-                    case 1:
-                        break;       // exit the switch case
-                    case 2:
-                        popAndAdd(); // fork new solver for the first neighbour
-                    case 3:
-                        popAndAdd(); // same logic as above
-                        popAndAdd();
+
+                if (frontier.size() == 2) {
+                    popAndAdd(current);
+                    popAndAdd(current);
+                } else if (frontier.size() == 3){
+                    popAndAdd(current);
+                    popAndAdd(current);
+                    popAndAdd(current);
                 }
             }
         } while (!frontier.isEmpty() && !goalFound.get()); //while loop end
 
         for (ForkJoinSolver task : forkedSolvers) {
-            if (task.join() != null && !task.result.isEmpty()) {
-                result.addAll(task.result);
+            if (task.join() != null) {
+                result.addAll(task.result); //Add child result
+                result.addAll(pathFromTo(start, current)); //Add own result
+                task.predecessor.forEach((key, value) -> predecessor.merge(key, value, (v1, v2) -> v1 + v2));
             }
         }
 
-        if (result != null && !result.isEmpty()) {
-            result.addAll(pathFromTo(start, current));
+        if (!result.isEmpty()) {
+            System.out.println(predecessor + "predecessor");
+            System.out.println(pathFromTo(start, current) + "pathfromto");
+            System.out.println(result + "result");
             return result;
         } else {
-            return null; //if no goal was ever found, return null
+            return null;
         }
     }
 
@@ -132,15 +132,14 @@ public class ForkJoinSolver extends SequentialSolver {
      * Pops an int from the frontier stack, creates a new ForkJoinSolver with all the necessary
      * parameters and adds this ForkJoinSolver to the list with tasks to be processed
      */
-        private void popAndAdd() {
+        private void popAndAdd(int current) {
         if (!frontier.isEmpty()) {
             Integer next = frontier.pop();
             if (!visited.contains(next)) {
                 ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
-                // alternativt testa att köra join på denna instans och vänta på dess barn.
-                task.fork(); // Create chaos, uncomment when we have desired behavior
-                //task.join(); //this makes the code work but not running in parallel
+                task.predecessor.put(next, current);
+                task.fork();
             }
         }
     }
