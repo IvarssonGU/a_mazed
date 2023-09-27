@@ -23,7 +23,6 @@ public class ForkJoinSolver extends SequentialSolver {
     private final Stack<Integer> frontier = new Stack<>();
     private static final AtomicBoolean goalFound = new AtomicBoolean();
     private CopyOnWriteArrayList<Integer> result = new CopyOnWriteArrayList<>();
-    //private static Map<Integer, Integer> predecessor = new ConcurrentHashMap<>();
 
 
     /**
@@ -76,9 +75,13 @@ public class ForkJoinSolver extends SequentialSolver {
     }
 
     private List<Integer> parallelSearch(int start) {
-        int player = maze.newPlayer(start);
+
         frontier.push(start);
         int current;
+        if (visited.contains(start)) {
+            return null;
+        }
+        int player = maze.newPlayer(start);
 
         do {
             if (goalFound.get()) return null;
@@ -118,7 +121,6 @@ public class ForkJoinSolver extends SequentialSolver {
             if (task.join() != null) {
                 result.addAll(pathFromTo(start, current)); //Add own result
                 result.addAll(task.result); //Add child result
-                //task.predecessor.forEach((key, value) -> predecessor.merge(key, value, (v1, v2) -> v1 + v2));
             }
         }
 
@@ -139,7 +141,6 @@ public class ForkJoinSolver extends SequentialSolver {
             if (!visited.contains(next)) {
                 ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
-                //System.out.println("Forked a kid, parent in: " + current + " and child in: " + next);
                 predecessor.put(next, current);
                 task.fork();
             }
