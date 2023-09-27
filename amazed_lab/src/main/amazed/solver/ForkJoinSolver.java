@@ -84,7 +84,6 @@ public class ForkJoinSolver extends SequentialSolver {
         int player = maze.newPlayer(start);
 
         do {
-            if (goalFound.get()) return null;
             current = frontier.pop(); // get the new node to process
 
             if (maze.hasGoal(current)) {
@@ -107,12 +106,12 @@ public class ForkJoinSolver extends SequentialSolver {
                 }
 
                 if (frontier.size() == 2) {
-                    popAndAdd(current);
-                    popAndAdd(current);
+                    popAndAdd();
+                    popAndAdd();
                 } else if (frontier.size() == 3){
-                    popAndAdd(current);
-                    popAndAdd(current);
-                    popAndAdd(current);
+                    popAndAdd();
+                    popAndAdd();
+                    popAndAdd();
                 }
             }
         } while (!frontier.isEmpty() && !goalFound.get());
@@ -135,13 +134,12 @@ public class ForkJoinSolver extends SequentialSolver {
      * Pops an int from the frontier stack, creates a new ForkJoinSolver with all the necessary
      * parameters and adds this ForkJoinSolver to the list with tasks to be processed
      */
-        private void popAndAdd(int current) {
+        private void popAndAdd() {
         if (!frontier.isEmpty()) {
             Integer next = frontier.pop();
             if (!visited.contains(next)) {
                 ForkJoinSolver task = new ForkJoinSolver(maze, next);
                 forkedSolvers.add(task);
-                predecessor.put(next, current);
                 task.fork();
             }
         }
